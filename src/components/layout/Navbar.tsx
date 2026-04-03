@@ -30,7 +30,7 @@ const Navbar = () => {
     <header
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-400',
-        isScrolled ? 'glass-nav py-3' : 'bg-transparent py-5'
+        isScrolled ? 'glass-nav py-3' : 'bg-white py-3'
       )}
     >
       <div className="container mx-auto px-4 md:px-6">
@@ -38,7 +38,7 @@ const Navbar = () => {
           {/* Logo */}
           <Link 
             to="/" 
-            className="text-xl md:text-2xl font-semibold tracking-tight transition-colors hover:opacity-90"
+            className="text-xl md:text-2xl font-semibold tracking-tight transition-colors hover:opacity-80"
           >
             Aesthete
           </Link>
@@ -144,7 +144,7 @@ const NavLink = ({ to, active, children }: { to: string; active: boolean; childr
       "px-3 py-2 text-sm font-medium rounded-md transition-colors",
       active 
         ? "text-primary" 
-        : "text-foreground/80 hover:text-foreground hover:bg-secondary/50"
+        : "text-foreground/80 hover:text-foreground hover:bg-secondary/80"
     )}
   >
     {children}
