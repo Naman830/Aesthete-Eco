@@ -1,24 +1,89 @@
+# =========================
+# Node / React / Next / Vite
+# =========================
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn/cache/
+.yarn/unplugged/
+.yarn/build-state.yml
+.yarn/install-state.gz
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+coverage/
+
+# Vite
+.vite/
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# =========================
+# Environment Variables (IMPORTANT)
+# =========================
+.env
+.env.*
+!.env.example
 
-# Editor directories and files
+# =========================
+# Supabase
+# =========================
+.supabase/
+supabase/.temp/
+supabase/.branches/
+
+# =========================
+# OS / Editor files
+# =========================
+.DS_Store
+Thumbs.db
+
+# VS Code
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+!.vscode/settings.json
+
+# JetBrains
+.idea/
+
+# =========================
+# TypeScript
+# =========================
+*.tsbuildinfo
+
+# =========================
+# Cache / Temp
+# =========================
+.cache/
+.tmp/
+temp/
+
+# =========================
+# Testing
+# =========================
+jest-cache/
+playwright-report/
+test-results/
+
+# =========================
+# Misc
+# =========================
+*.pem
+*.key
+*.crt
+
+# =========================
+# Optional (uncomment if needed)
+# =========================
+# public/uploads/
+# storage/

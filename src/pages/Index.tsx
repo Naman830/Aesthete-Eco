@@ -43,7 +43,7 @@ const Index = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
                     <h3 className="text-xl font-medium text-white mb-2">Lighting</h3>
-                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-white hover:bg-white/10" asChild>
+                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-black hover:bg-white/10" asChild>
                       <Link to="/products?category=lighting">
                         Shop Now
                         <ChevronRight className="ml-1 h-4 w-4" />
@@ -61,7 +61,7 @@ const Index = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
                     <h3 className="text-xl font-medium text-white mb-2">Kitchen</h3>
-                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-white hover:bg-white/10" asChild>
+                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-black hover:bg-white/10" asChild>
                       <Link to="/products?category=kitchen">
                         Shop Now
                         <ChevronRight className="ml-1 h-4 w-4" />
@@ -79,7 +79,7 @@ const Index = () => {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col justify-end p-6">
                     <h3 className="text-xl font-medium text-white mb-2">Home</h3>
-                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-white hover:bg-white/10" asChild>
+                    <Button variant="outline" size="sm" className="w-fit border-white/30 text-black hover:bg-white/10" asChild>
                       <Link to="/products?category=home">
                         Shop Now
                         <ChevronRight className="ml-1 h-4 w-4" />
