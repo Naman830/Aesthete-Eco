@@ -7,7 +7,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import { CartProvider } from "@/context/CartContext";
 import { Helmet } from "react-helmet";
 
-// Pages
+// Core pages
 import Index from "./pages/Index";
 import Products from "./pages/Products";
 import ProductDetail from "./pages/ProductDetail";
@@ -15,25 +15,34 @@ import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
+
+// Auth pages
+import ForgotPassword from "./pages/ForgotPassword";
+
+// Account & commerce
+import Account from "./pages/Account";
+import WishlistPage from "./pages/Wishlist";
+import OrderConfirmation from "./pages/OrderConfirmation";
+import SearchPage from "./pages/Search";
+
+// Company pages
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Careers from "./pages/Careers";
 import Sustainability from "./pages/Sustainability";
 import Press from "./pages/Press";
+
+// Customer service pages
 import FAQ from "./pages/FAQ";
 import Shipping from "./pages/Shipping";
 import Warranty from "./pages/Warranty";
 import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
-import OrderConfirmation from "./pages/OrderConfirmation";
-import ForgotPassword from "./pages/ForgotPassword";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Retry once on network failure instead of 3 times (default)
       retry: 1,
-      // Consider data fresh for 30 seconds to reduce redundant refetches
       staleTime: 30_000,
     },
   },
@@ -42,34 +51,44 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      {/* AuthProvider must wrap everything that uses useAuth() */}
       <AuthProvider>
         <CartProvider>
           <Helmet>
             <title>Aesthete | Minimalist Home &amp; Lifestyle</title>
-            <meta name="description" content="Curated minimalist products for modern living. Discover pieces that inspire and endure." />
+            <meta
+              name="description"
+              content="Curated minimalist products for modern living. Discover pieces that inspire and endure."
+            />
           </Helmet>
           <Toaster />
           <Sonner />
           <BrowserRouter>
             <Routes>
+              {/* ── Main ── */}
               <Route path="/" element={<Index />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
+              <Route path="/search" element={<SearchPage />} />
+
+              {/* ── Auth ── */}
               <Route path="/login" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
+
+              {/* ── Account ── */}
+              <Route path="/account" element={<Account />} />
+              <Route path="/wishlist" element={<WishlistPage />} />
               <Route path="/order-confirmation" element={<OrderConfirmation />} />
 
-              {/* Company Pages */}
+              {/* ── Company ── */}
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/careers" element={<Careers />} />
               <Route path="/sustainability" element={<Sustainability />} />
               <Route path="/press" element={<Press />} />
 
-              {/* Customer Service Pages */}
+              {/* ── Customer Service ── */}
               <Route path="/faq" element={<FAQ />} />
               <Route path="/shipping" element={<Shipping />} />
               <Route path="/warranty" element={<Warranty />} />
