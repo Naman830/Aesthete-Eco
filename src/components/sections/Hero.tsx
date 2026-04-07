@@ -49,27 +49,29 @@ const Hero = () => {
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
-            <span className="inline-block px-3 py-1 mb-5 text-xs font-medium bg-white/10 backdrop-blur-sm rounded-full text-white">
-              Minimalist Design Collection
+        <span className="inline-block px-4 py-1.5 mb-2  text-[11px] tracking-widest uppercase font-medium backdrop-blur-md rounded-full text-white/90 border border-white/10 pointer-events-none">
+              Designed for Modern Living
             </span>
           </div>
 
-          <h1
+         <h1
             className={cn(
-              "text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-white mb-6 transition-all duration-700 delay-200 transform",
+              "text-4xl sm:text-5xl md:text-6xl font-semibold leading-[1.1] tracking-tight text-white mb-6 transition-all duration-700 delay-200 transform",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
-            Elevate Your Space With Timeless Design
+            Own Less. <br />
+            Experience More.
           </h1>
+
           
           <p
             className={cn(
-              "text-lg md:text-xl text-white/80 mb-8 max-w-xl transition-all duration-700 delay-300 transform",
+              "text-lg md:text-xl text-white/70 mb-10 max-w-xl leading-relaxed transition-all duration-700 delay-300 transform",
               isVisible ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             )}
           >
-            Curated minimalist products that combine form and function for modern living. Discover pieces that inspire and endure.
+            Aesthelte brings you carefully crafted essentials that blend minimal design with everyday utility — built to last, not just impress.
           </p>
           
           <div
@@ -80,11 +82,11 @@ const Hero = () => {
           >
             <Button size="lg" asChild className="hover-lift">
               <Link to="/products">
-                Shop Collection
+                   Explore Collection
                 <ChevronRight className="ml-2 h-4 w-4" />
               </Link>
             </Button>
-            <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10 hover-lift" asChild>
+            <Button size="lg" variant="outline" className="border-white/30 text-black hover:bg-white/10 hover-lift" asChild>
               <Link to="/about">
                 Our Story
               </Link>
