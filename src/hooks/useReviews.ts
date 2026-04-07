@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
@@ -11,27 +10,37 @@ interface Review {
   rating: number;
   title: string | null;
   comment: string | null;
-  is_verified_purchase: boolean;
-  helpful_count: number;
-  created_at: string;
-  updated_at: string;
+  is_verified_purchase: boolean | null;
+  helpful_count: number | null;
+  created_at: string | null;
+  updated_at: string | null;
   profiles: {
     full_name: string | null;
-  };
+  } | null;
 }
 
 export const useReviews = (productId?: string) => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!!productId); // false immediately if no productId
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (productId) {
       fetchReviews(productId);
+    } else {
+      setLoading(false);
     }
   }, [productId]);
 
-  const fetchReviews = async (productId: string) => {
+  const fetchReviews = async (pid: string) => {
     try {
       const { data, error } = await supabase
         .from('product_reviews')
@@ -41,27 +50,35 @@ export const useReviews = (productId?: string) => {
             full_name
           )
         `)
-        .eq('product_id', productId)
+        .eq('product_id', pid)
         .order('created_at', { ascending: false });
+
+      if (!mountedRef.current) return;
 
       if (error) {
         console.error('Error fetching reviews:', error);
       } else {
-        setReviews(data || []);
+        setReviews((data as Review[]) || []);
       }
     } catch (error) {
+      if (!mountedRef.current) return;
       console.error('Error fetching reviews:', error);
     } finally {
-      setLoading(false);
+      if (mountedRef.current) setLoading(false);
     }
   };
 
-  const addReview = async (productId: string, rating: number, title?: string, comment?: string) => {
+  const addReview = async (
+    pid: string,
+    rating: number,
+    title?: string,
+    comment?: string
+  ): Promise<boolean> => {
     if (!user) {
       toast({
-        title: "Please sign in",
-        description: "You need to be signed in to write a review",
-        variant: "destructive",
+        title: 'Please sign in',
+        description: 'You need to be signed in to write a review.',
+        variant: 'destructive',
       });
       return false;
     }
@@ -71,43 +88,52 @@ export const useReviews = (productId?: string) => {
         .from('product_reviews')
         .insert({
           user_id: user.id,
-          product_id: productId,
+          product_id: pid,
           rating,
-          title,
-          comment,
+          title: title || null,
+          comment: comment || null,
         });
 
+      if (!mountedRef.current) return false;
+
       if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+        if (error.code === '23505') {
           toast({
-            title: "Review already exists",
-            description: "You have already reviewed this product",
-            variant: "destructive",
+            title: 'Already reviewed',
+            description: 'You have already reviewed this product.',
+            variant: 'destructive',
           });
         } else {
           console.error('Error adding review:', error);
           toast({
-            title: "Error",
-            description: "Failed to add review",
-            variant: "destructive",
+            title: 'Error',
+            description: 'Failed to submit review. Please try again.',
+            variant: 'destructive',
           });
         }
         return false;
-      } else {
-        toast({
-          title: "Review added",
-          description: "Your review has been added successfully",
-        });
-        await fetchReviews(productId);
-        return true;
       }
+
+      toast({
+        title: 'Review submitted',
+        description: 'Your review has been added successfully.',
+      });
+      await fetchReviews(pid);
+      return true;
     } catch (error) {
+      if (!mountedRef.current) return false;
       console.error('Error adding review:', error);
       return false;
     }
   };
 
-  const updateReview = async (reviewId: string, productId: string, rating: number, title?: string, comment?: string) => {
+  const updateReview = async (
+    reviewId: string,
+    pid: string,
+    rating: number,
+    title?: string,
+    comment?: string
+  ): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -115,35 +141,39 @@ export const useReviews = (productId?: string) => {
         .from('product_reviews')
         .update({
           rating,
-          title,
-          comment,
+          title: title || null,
+          comment: comment || null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', reviewId)
         .eq('user_id', user.id);
 
+      if (!mountedRef.current) return false;
+
       if (error) {
         console.error('Error updating review:', error);
         toast({
-          title: "Error",
-          description: "Failed to update review",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to update review.',
+          variant: 'destructive',
         });
         return false;
-      } else {
-        toast({
-          title: "Review updated",
-          description: "Your review has been updated successfully",
-        });
-        await fetchReviews(productId);
-        return true;
       }
+
+      toast({
+        title: 'Review updated',
+        description: 'Your review has been updated.',
+      });
+      await fetchReviews(pid);
+      return true;
     } catch (error) {
+      if (!mountedRef.current) return false;
       console.error('Error updating review:', error);
       return false;
     }
   };
 
-  const deleteReview = async (reviewId: string, productId: string) => {
+  const deleteReview = async (reviewId: string, pid: string): Promise<boolean> => {
     if (!user) return false;
 
     try {
@@ -153,37 +183,39 @@ export const useReviews = (productId?: string) => {
         .eq('id', reviewId)
         .eq('user_id', user.id);
 
+      if (!mountedRef.current) return false;
+
       if (error) {
         console.error('Error deleting review:', error);
         toast({
-          title: "Error",
-          description: "Failed to delete review",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Failed to delete review.',
+          variant: 'destructive',
         });
         return false;
-      } else {
-        toast({
-          title: "Review deleted",
-          description: "Your review has been deleted",
-        });
-        await fetchReviews(productId);
-        return true;
       }
+
+      toast({
+        title: 'Review deleted',
+        description: 'Your review has been removed.',
+      });
+      await fetchReviews(pid);
+      return true;
     } catch (error) {
+      if (!mountedRef.current) return false;
       console.error('Error deleting review:', error);
       return false;
     }
   };
 
-  const getUserReview = (productId: string) => {
+  const getUserReview = (pid: string): Review | null => {
     if (!user) return null;
-    return reviews.find(review => review.user_id === user.id && review.product_id === productId);
+    return reviews.find(r => r.user_id === user.id && r.product_id === pid) ?? null;
   };
 
-  const getAverageRating = () => {
+  const getAverageRating = (): number => {
     if (reviews.length === 0) return 0;
-    const total = reviews.reduce((sum, review) => sum + review.rating, 0);
-    return total / reviews.length;
+    return reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length;
   };
 
   return {
@@ -194,6 +226,6 @@ export const useReviews = (productId?: string) => {
     deleteReview,
     getUserReview,
     getAverageRating,
-    refetch: productId ? () => fetchReviews(productId) : () => {},
+    refetch: productId ? () => fetchReviews(productId) : () => Promise.resolve(),
   };
 };

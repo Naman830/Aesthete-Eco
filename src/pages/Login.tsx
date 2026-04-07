@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
 import { useAuth } from '@/context/AuthContext';
@@ -9,15 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { toast } from '@/components/ui/use-toast';
 
 const Login = () => {
   const navigate = useNavigate();
   const { signIn, signUp, user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
-  const [loginForm, setLoginForm] = useState({
-    email: '',
-    password: '',
-  });
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [registerForm, setRegisterForm] = useState({
     name: '',
     email: '',
@@ -25,11 +22,12 @@ const Login = () => {
     confirmPassword: '',
   });
 
-  // Redirect if already logged in
-  if (user) {
-    navigate('/');
-    return null;
-  }
+  // Redirect authenticated users — in an effect, not during render
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleLoginChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -44,37 +42,40 @@ const Login = () => {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
     const { error } = await signIn(loginForm.email, loginForm.password);
-    
     if (!error) {
       navigate('/');
     }
-    
     setIsLoading(false);
   };
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (registerForm.password !== registerForm.confirmPassword) {
+      toast({
+        title: 'Passwords do not match',
+        description: 'Please make sure both password fields are identical.',
+        variant: 'destructive',
+      });
       return;
     }
-    
-    setIsLoading(true);
-    
-    const { error } = await signUp(registerForm.email, registerForm.password, registerForm.name);
-    
-    if (!error) {
-      // Don't redirect immediately, let user confirm email first
-      setRegisterForm({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
+
+    if (registerForm.password.length < 6) {
+      toast({
+        title: 'Password too short',
+        description: 'Password must be at least 6 characters.',
+        variant: 'destructive',
       });
+      return;
     }
-    
+
+    setIsLoading(true);
+    const { error } = await signUp(registerForm.email, registerForm.password, registerForm.name);
+
+    if (!error) {
+      setRegisterForm({ name: '', email: '', password: '', confirmPassword: '' });
+    }
     setIsLoading(false);
   };
 
@@ -87,7 +88,7 @@ const Login = () => {
 
       <div className="flex min-h-screen flex-col">
         <Navbar />
-        
+
         <main className="flex-1 pt-24">
           <div className="container mx-auto px-4 md:px-6 py-8">
             <div className="max-w-md mx-auto">
@@ -97,68 +98,67 @@ const Login = () => {
                   Sign in to your account or create a new one
                 </p>
               </div>
-              
+
               <div className="bg-card rounded-lg shadow-sm border border-border overflow-hidden animate-scale-in">
                 <Tabs defaultValue="login">
                   <TabsList className="w-full rounded-none grid grid-cols-2">
                     <TabsTrigger value="login">Sign In</TabsTrigger>
                     <TabsTrigger value="register">Create Account</TabsTrigger>
                   </TabsList>
-                  
+
                   {/* Login Tab */}
                   <TabsContent value="login" className="p-6">
                     <form onSubmit={handleLoginSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="login-email">Email</Label>
                         <Input
-                          id="email"
+                          id="login-email"
                           name="email"
                           type="email"
                           placeholder="you@example.com"
                           value={loginForm.email}
                           onChange={handleLoginChange}
                           required
+                          autoComplete="email"
                         />
                       </div>
                       <div className="space-y-2">
                         <div className="flex items-center justify-between">
-                          <Label htmlFor="password">Password</Label>
+                          <Label htmlFor="login-password">Password</Label>
                           <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                             Forgot password?
                           </Link>
                         </div>
                         <Input
-                          id="password"
+                          id="login-password"
                           name="password"
                           type="password"
                           placeholder="••••••••"
                           value={loginForm.password}
                           onChange={handleLoginChange}
                           required
+                          autoComplete="current-password"
                         />
                       </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full hover-lift" 
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Signing in...' : 'Sign In'}
+                      <Button type="submit" className="w-full hover-lift" disabled={isLoading}>
+                        {isLoading ? 'Signing in…' : 'Sign In'}
                       </Button>
                     </form>
                   </TabsContent>
-                  
+
                   {/* Register Tab */}
                   <TabsContent value="register" className="p-6">
                     <form onSubmit={handleRegisterSubmit} className="space-y-4">
                       <div className="space-y-2">
-                        <Label htmlFor="name">Full Name</Label>
+                        <Label htmlFor="register-name">Full Name</Label>
                         <Input
-                          id="name"
+                          id="register-name"
                           name="name"
                           placeholder="John Doe"
                           value={registerForm.name}
                           onChange={handleRegisterChange}
                           required
+                          autoComplete="name"
                         />
                       </div>
                       <div className="space-y-2">
@@ -171,6 +171,7 @@ const Login = () => {
                           value={registerForm.email}
                           onChange={handleRegisterChange}
                           required
+                          autoComplete="email"
                         />
                       </div>
                       <div className="space-y-2">
@@ -183,6 +184,8 @@ const Login = () => {
                           value={registerForm.password}
                           onChange={handleRegisterChange}
                           required
+                          autoComplete="new-password"
+                          minLength={6}
                         />
                       </div>
                       <div className="space-y-2">
@@ -195,26 +198,17 @@ const Login = () => {
                           value={registerForm.confirmPassword}
                           onChange={handleRegisterChange}
                           required
+                          autoComplete="new-password"
                         />
                       </div>
-                      <Button 
-                        type="submit" 
-                        className="w-full hover-lift" 
-                        disabled={isLoading}
-                      >
-                        {isLoading ? 'Creating account...' : 'Create Account'}
+                      <Button type="submit" className="w-full hover-lift" disabled={isLoading}>
+                        {isLoading ? 'Creating account…' : 'Create Account'}
                       </Button>
-                      
                       <p className="text-xs text-center text-muted-foreground mt-2">
                         By creating an account, you agree to our{' '}
-                        <Link to="/terms" className="text-primary hover:underline">
-                          Terms of Service
-                        </Link>{' '}
-                        and{' '}
-                        <Link to="/privacy" className="text-primary hover:underline">
-                          Privacy Policy
-                        </Link>
-                        .
+                        <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link>
+                        {' '}and{' '}
+                        <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
                       </p>
                     </form>
                   </TabsContent>
@@ -223,7 +217,7 @@ const Login = () => {
             </div>
           </div>
         </main>
-        
+
         <Footer />
       </div>
     </>
