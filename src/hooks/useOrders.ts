@@ -3,7 +3,7 @@ import { useAuth } from '@/context/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/use-toast';
 
-interface OrderItem {
+export interface OrderItem {
   id: string;
   product_id: string;
   product_name: string;
@@ -13,7 +13,7 @@ interface OrderItem {
   total_price: number;
 }
 
-interface Order {
+export interface Order {
   id: string;
   order_number: string;
   status: string;
@@ -29,6 +29,25 @@ interface Order {
   created_at: string | null;
   updated_at: string | null;
   order_items: OrderItem[];
+}
+
+// Shape returned by the bare insert (no joined order_items yet)
+interface OrderRow {
+  id: string;
+  order_number: string;
+  status: string;
+  total_amount: number;
+  shipping_amount: number | null;
+  tax_amount: number | null;
+  discount_amount: number | null;
+  billing_address: Record<string, unknown>;
+  shipping_address: Record<string, unknown>;
+  payment_status: string;
+  payment_method: string | null;
+  notes: string | null;
+  user_id: string;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface CreateOrderPayload {
@@ -90,7 +109,7 @@ export const useOrders = () => {
           variant: 'destructive',
         });
       } else {
-        setOrders((data as Order[]) || []);
+        setOrders((data as unknown as Order[]) || []);
       }
     } catch (error) {
       if (!mountedRef.current) return;
@@ -100,7 +119,7 @@ export const useOrders = () => {
     }
   };
 
-  const createOrder = async (orderData: CreateOrderPayload): Promise<Order | null> => {
+  const createOrder = async (orderData: CreateOrderPayload): Promise<OrderRow | null> => {
     if (!user) {
       toast({
         title: 'Please sign in',
@@ -111,12 +130,37 @@ export const useOrders = () => {
     }
 
     try {
-      // Calculate totals (INR-based: free shipping above ₹2,000)
+      // ── Defensive profile upsert ─────────────────────────────────────
+      // If the user signed up before the DB trigger was installed, their
+      // profiles row may not exist — causing a FK violation on orders insert.
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .upsert(
+          {
+            id: user.id,
+            email: user.email ?? null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            full_name: (user.user_metadata as any)?.full_name
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              ?? (user.user_metadata as any)?.name
+              ?? null,
+            updated_at: new Date().toISOString(),
+          },
+          { onConflict: 'id', ignoreDuplicates: false }
+        );
+
+      if (profileError) {
+        // Non-fatal: log but continue — profile may already exist
+        console.warn('Profile upsert warning:', profileError.message);
+      }
+      // ─────────────────────────────────────────────────────────────────
+
+      // Calculate totals (INR: free shipping above ₹2,000)
       const subtotal = orderData.items.reduce(
         (sum, item) => sum + item.price * item.quantity,
         0
       );
-      const shipping_amount = subtotal > 2000 ? 0 : 99; // ₹99 flat / free above ₹2,000
+      const shipping_amount = subtotal > 2000 ? 0 : 99;
       const tax_amount = Math.round(subtotal * 0.18 * 100) / 100; // 18% GST
       const discount_amount = 0;
       const total_amount = subtotal + shipping_amount + tax_amount;
@@ -136,22 +180,29 @@ export const useOrders = () => {
       }
 
       // Insert order
+      // We cast through `unknown` because the Supabase-generated Insert type
+      // incorrectly omits user_id (it's a non-nullable column set by RLS context
+      // but must also be passed explicitly so Postgres can satisfy the FK check).
+      const insertPayload = {
+        user_id: user.id,
+        order_number: orderNumberData as string,
+        total_amount,
+        shipping_amount,
+        tax_amount,
+        discount_amount,
+        billing_address: orderData.billing_address,
+        shipping_address: orderData.shipping_address,
+        payment_method: orderData.payment_method ?? null,
+        notes: orderData.notes ?? null,
+        status: 'pending',
+        payment_status: 'pending',
+      };
+
       const { data: order, error: orderError } = await supabase
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         .from('orders')
-        .insert({
-          user_id: user.id,
-          order_number: orderNumberData as string,
-          total_amount,
-          shipping_amount,
-          tax_amount,
-          discount_amount,
-          billing_address: orderData.billing_address,
-          shipping_address: orderData.shipping_address,
-          payment_method: orderData.payment_method ?? null,
-          notes: orderData.notes ?? null,
-          status: 'pending',
-          payment_status: 'pending',
-        })
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .insert(insertPayload as any)
         .select()
         .single();
 
@@ -159,7 +210,7 @@ export const useOrders = () => {
         console.error('Error creating order:', orderError);
         toast({
           title: 'Order failed',
-          description: 'Could not create your order. Please try again.',
+          description: `Could not create your order. (${orderError.message})`,
           variant: 'destructive',
         });
         return null;
@@ -184,10 +235,10 @@ export const useOrders = () => {
         console.error('Error creating order items:', itemsError);
         toast({
           title: 'Order incomplete',
-          description: 'Order was created but items could not be saved. Contact support.',
+          description: 'Order placed but items could not be saved. Contact support.',
           variant: 'destructive',
         });
-        return null;
+        // Still return order so the confirmation page shows
       }
 
       toast({
@@ -195,9 +246,9 @@ export const useOrders = () => {
         description: `Order ${order.order_number} has been confirmed.`,
       });
 
-      // Refresh the orders list
-      await fetchOrders();
-      return order as Order;
+      // Refresh list in background
+      fetchOrders();
+      return order as unknown as OrderRow;
     } catch (error) {
       console.error('Error creating order:', error);
       toast({
